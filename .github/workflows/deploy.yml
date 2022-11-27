@@ -31,6 +31,9 @@ jobs:
         run: |
           echo "HEROKU_APP_NAME=lineup-test-be" >> $GITHUB_ENV
           echo "TOKEN=${{secrets.TOKEN_TEST}}" >> $GITHUB_ENV
+          echo "CHAT_ID=${{secrets.CHAT_ID_TES}}" >> $GITHUB_ENV
+          echo "LOG_CHAT_ID=${{secrets.LOG_CHAT_ID_TEST}}" >> $GITHUB_ENV
+          echo "SEED=${{secrets.SEED_TEST}}" >> $GITHUB_ENV
       - name: Stage to PROD
         if: endsWith(github.ref, '/master')
         run: |
