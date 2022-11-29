@@ -1,0 +1,57 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - run: npm run build --if-present
+
+  deploy:
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_EMAIL: lidia.zhabo99@gmail.com
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Stage to DEVELOP
+        if: endsWith(github.ref, '/develop')
+        run: |
+          echo "HEROKU_APP_NAME=lineup-test-be" >> $GITHUB_ENV
+          echo "TOKEN=${{secrets.TOKEN_TEST}}" >> $GITHUB_ENV
+          echo "CHAT_ID=${{secrets.CHAT_ID_TES}}" >> $GITHUB_ENV
+          echo "LOG_CHAT_ID=${{secrets.LOG_CHAT_ID_TEST}}" >> $GITHUB_ENV
+          echo "SEED=${{secrets.SEED_TEST}}" >> $GITHUB_ENV
+      - name: Stage to PROD
+        if: endsWith(github.ref, '/master')
+        run: |
+          echo "HEROKU_APP_NAME=lineup-be" >> $GITHUB_ENV
+          echo "TOKEN=${{secrets.TOKEN}}" >> $GITHUB_ENV
+          echo "CHAT_ID=${{secrets.CHAT_ID}}" >> $GITHUB_ENV
+          echo "LOG_CHAT_ID=${{secrets.LOG_CHAT_ID}}" >> $GITHUB_ENV
+          echo "SEED=${{secrets.SEED}}" >> $GITHUB_ENV
+      - name: Set env
+        run: echo ${{env.MONGO_URL }}
+      - run: heroku config:set CHAT_ID=${{secrets.CHAT_ID}} -a ${{ env.HEROKU_APP_NAME }}
+      - run: heroku config:set LOG_CHAT_ID=${{secrets.LOG_CHAT_ID}} -a ${{ env.HEROKU_APP_NAME }}
+      - run: heroku config:set SEED=${{secrets.SEED}} -a ${{ env.HEROKU_APP_NAME }}
+      - run: heroku config:set TOKEN=${{env.TOKEN}} -a ${{ env.HEROKU_APP_NAME }}
+      - name: Deploy to ${{ env.HEROKU_APP_NAME }}
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: ${{ env.HEROKU_APP_NAME }}
+          heroku_email: "lidia.zhabo99@gmail.com"
+          buildpack: https://github.com/heroku/heroku-buildpack-nodejs.git
