@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./src/index.ts",
+    "start": "ts-node src/index.ts",
     "build": "tsc --p tsconfig.build.json",
     "dev": "nodemon --watch './' --ignore 'src/**/*.spec.ts' --exec 'ts-node' ./src/index.ts",
     "format": "prettier --write \"src/**/*.{ts,js,tsx,jsx,css}\""
