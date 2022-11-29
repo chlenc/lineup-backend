@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "watch": "nodemon --watch './' --ignore 'src/**/*.spec.ts' --exec 'ts-node' ./src/index.ts"
+    "start": "node ./dist/server.js",
+    "build": "tsc --p tsconfig.build.json",
+    "dev": "nodemon --watch './' --ignore 'src/**/*.spec.ts' --exec 'ts-node' ./src/index.ts",
+    "format": "prettier --write \"src/**/*.{ts,js,tsx,jsx,css}\""
   },
   "repository": {
     "type": "git",
