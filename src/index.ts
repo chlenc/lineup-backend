@@ -15,19 +15,25 @@ const puzzlePools = [
 ];
 let assetId = "DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p";
 
-cron.schedule("* * * * *", async () => {
+const rebalance = async () => {
   const req = `/addresses/data/${DAPP}/currentPool`;
   const { data: currentPool } = await nodeService.request(req);
   const apys = await Promise.all(
     puzzlePools.map(PuzzlePoolStateFetchService.fetchPoolsStats)
   );
-  const maxYieldPool = apys.reduce((acc, stats, i) => {
-    const tokenStat = stats.find((s) => s.assetId === assetId);
-    return tokenStat == null || tokenStat.supplyAPY.lte(acc ?? BN.ZERO)
-      ? acc
-      : (puzzlePools[i] as string);
-  }, null as string | null);
-
+  const { address: maxYieldPool, apy: maxYieldPoolApy } = apys.reduce(
+    ({ address, apy }, stats, i) => {
+      const tokenStat = stats.find((s) => s.assetId === assetId);
+      return tokenStat == null || tokenStat.supplyAPY.lte(apy)
+        ? { address, apy }
+        : { address: puzzlePools[i], apy: tokenStat.supplyAPY };
+    },
+    { address: null, apy: BN.ZERO } as { address: string | null; apy: BN }
+  );
+  // console.log({
+  //   maxYieldPool: maxYieldPool,
+  //   currentPool: currentPool.value,
+  // });
   if (maxYieldPool != null && maxYieldPool !== currentPool.value) {
     try {
       const options = {
@@ -41,10 +47,7 @@ cron.schedule("* * * * *", async () => {
         apys[puzzlePools.indexOf(currentPool.value)]
           .find((s) => s.assetId === assetId)
           ?.supplyAPY.toFormat(2) ?? "";
-      const newApy =
-        apys[puzzlePools.indexOf(maxYieldPool)]
-          .find((s) => s.assetId === assetId)
-          ?.supplyAPY.toFormat(2) ?? "";
+      const newApy = maxYieldPoolApy.toFormat(2) ?? "";
 
       const msg = `♻️ The funds were moved to a more profitable pool: ${maxYieldPool}\n\nRebalance TX: ${EXPLORER_URL}/tx/${tx.id}\n\nApy: ${lastApy}% ➡️ ${newApy}%`;
       await groupMessage(msg);
@@ -52,6 +55,15 @@ cron.schedule("* * * * *", async () => {
       console.log(e);
     }
   }
-});
+};
+
+(async () => {
+  while (true) {
+    await rebalance();
+    await new Promise((r) => setTimeout(r, 60000));
+  }
+})();
+
+// cron.schedule("* * * * *", rebalance);
 
 process.stdout.write("Bot has been started ✅  \n");
